@@ -1,3 +1,4 @@
+import os
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.models import Sequential
@@ -8,6 +9,12 @@ from tensorflow.keras.optimizers import Adam
 train_dir = 'Datasets/dataset3/dataset/train'
 validation_dir = 'Datasets/dataset3/dataset/test'
 
+# Debug prints to verify paths
+print(f"Training directory: {os.path.abspath(train_dir)}")
+print(f"Validation directory: {os.path.abspath(validation_dir)}")
+print(f"Training directory contents: {os.listdir(train_dir)}")
+print(f"Validation directory contents: {os.listdir(validation_dir)}")
+
 # Data preprocessing
 train_datagen = ImageDataGenerator(rescale=1./255)
 validation_datagen = ImageDataGenerator(rescale=1./255)
@@ -16,15 +23,21 @@ train_generator = train_datagen.flow_from_directory(
     train_dir,
     target_size=(150, 150),
     batch_size=20,
-    class_mode='binary'
+    class_mode=None,
+    shuffle=True
 )
 
 validation_generator = validation_datagen.flow_from_directory(
     validation_dir,
     target_size=(150, 150),
     batch_size=20,
-    class_mode='binary'
+    class_mode=None,
+    shuffle=True
 )
+
+# Debug prints
+print(f"Found {train_generator.samples} training images.")
+print(f"Found {validation_generator.samples} validation images.")
 
 # Build the model
 model = Sequential([
@@ -40,7 +53,7 @@ model = Sequential([
 ])
 
 # Compile the model
-model.compile(optimizer=Adam(lr=0.001), loss='binary_crossentropy', metrics=['accuracy'])
+model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy'])
 
 # Train the model
 history = model.fit(
