@@ -1,68 +1,56 @@
-import os
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
-from tensorflow.keras.optimizers import Adam
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Define paths
-train_dir = 'Datasets/dataset3/dataset/train'
-validation_dir = 'Datasets/dataset3/dataset/test'
+# CSV dosyasını yükleme
+def load_data(file_path):
+    df = pd.read_csv(file_path)
+    return df
 
-# Debug prints to verify paths
-print(f"Training directory: {os.path.abspath(train_dir)}")
-print(f"Validation directory: {os.path.abspath(validation_dir)}")
-print(f"Training directory contents: {os.listdir(train_dir)}")
-print(f"Validation directory contents: {os.listdir(validation_dir)}")
+# Veri setini tanıma
+def explore_data(df):
+    print("\n📌 İlk 5 Satır:\n", df.head())
+    print("\n📌 Veri Kümesi Bilgisi:")
+    print(df.info())
+    print("\n📌 Eksik Değerler:\n", df.isnull().sum())
+    print("\n📌 Benzersiz Değer Sayıları:\n", df.nunique())
+    print("\n📌 İstatistiksel Özet:\n", df.describe())
 
-# Data preprocessing
-train_datagen = ImageDataGenerator(rescale=1./255)
-validation_datagen = ImageDataGenerator(rescale=1./255)
+# Tüm görselleri tek ekranda gösterme
+def visualize_all(df):
+    fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+    
+    # Eksik verileri göster
+    sns.heatmap(df.isnull(), cbar=False, cmap='viridis', ax=axes[0, 0])
+    axes[0, 0].set_title("Eksik Veriler")
+    
+    # Veri tiplerini göster
+    df.dtypes.value_counts().plot(kind='bar', color='skyblue', ax=axes[0, 1])
+    axes[0, 1].set_xlabel("Veri Tipleri")
+    axes[0, 1].set_ylabel("Sütun Sayısı")
+    axes[0, 1].set_title("Veri Tiplerinin Dağılımı")
+    
+    # Playlist genre dağılımı
+    sns.countplot(y=df['playlist_genre'], order=df['playlist_genre'].value_counts().index, palette="coolwarm", ax=axes[1, 0])
+    axes[1, 0].set_title("Playlist Türlerinin Dağılımı")
+    axes[1, 0].set_xlabel("Şarkı Sayısı")
+    axes[1, 0].set_ylabel("Playlist Türü")
+    
+    # Track popularity dağılımı
+    sns.histplot(df['track_popularity'], bins=30, kde=True, color='purple', ax=axes[1, 1])
+    axes[1, 1].set_title("Şarkı Popülerliği Dağılımı")
+    axes[1, 1].set_xlabel("Popülerlik")
+    axes[1, 1].set_ylabel("Frekans")
+    
+    plt.tight_layout()
+    plt.show()
 
-train_generator = train_datagen.flow_from_directory(
-    train_dir,
-    target_size=(150, 150),
-    batch_size=20,
-    class_mode=None,
-    shuffle=True
-)
+# Ana çalışma fonksiyonu
+def main():
+    file_path = "spotify_songs.csv"  # Dosya yolunu buraya ekleyin
+    df = load_data(file_path)
+    explore_data(df)
+    visualize_all(df)
 
-validation_generator = validation_datagen.flow_from_directory(
-    validation_dir,
-    target_size=(150, 150),
-    batch_size=20,
-    class_mode=None,
-    shuffle=True
-)
-
-# Debug prints
-print(f"Found {train_generator.samples} training images.")
-print(f"Found {validation_generator.samples} validation images.")
-
-# Build the model
-model = Sequential([
-    Conv2D(32, (3, 3), activation='relu', input_shape=(150, 150, 3)),
-    MaxPooling2D(2, 2),
-    Conv2D(64, (3, 3), activation='relu'),
-    MaxPooling2D(2, 2),
-    Conv2D(128, (3, 3), activation='relu'),
-    MaxPooling2D(2, 2),
-    Flatten(),
-    Dense(512, activation='relu'),
-    Dense(1, activation='sigmoid')
-])
-
-# Compile the model
-model.compile(optimizer=Adam(learning_rate=0.001), loss='binary_crossentropy', metrics=['accuracy'])
-
-# Train the model
-history = model.fit(
-    train_generator,
-    steps_per_epoch=100,
-    epochs=15,
-    validation_data=validation_generator,
-    validation_steps=50
-)
-
-# Save the model
-model.save('pothole_recognition_model.h5')
+if __name__ == "__main__":
+    main()
